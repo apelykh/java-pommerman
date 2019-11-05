@@ -183,17 +183,13 @@ public class GameState {
      * @return true if the game could be advanced. False if it couldn't because ticks reached the game ticks limit.
      */
     public boolean next(Types.ACTIONS[] actions) {
-
-        if (tick < Types.MAX_GAME_TICKS)
-        {
+        if (tick < Types.MAX_GAME_TICKS)  {
             model.next(actions, tick);
             tick++;
             if (tick == Types.MAX_GAME_TICKS)
                 Types.getGameConfig().processTimeout(gameMode, getAgents(), getAliveAgents());
-
             return true;
         }
-
         return false;
     }
     /**

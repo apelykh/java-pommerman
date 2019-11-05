@@ -2,6 +2,8 @@ import core.Game;
 import players.*;
 import players.mcts.MCTSParams;
 import players.mcts.MCTSPlayer;
+import players.pessimisticMcts.pMCTSParams;
+import players.pessimisticMcts.pessimisticMCTSPlayer;
 import players.rhea.RHEAPlayer;
 import players.rhea.utils.Constants;
 import players.rhea.utils.RHEAParams;
@@ -27,13 +29,14 @@ public class Run {
         System.out.println("\t\t 3 SimplePlayer");
         System.out.println("\t\t 4 RHEA 200 itereations, shift buffer, pop size 1, random init, length: 12");
         System.out.println("\t\t 5 MCTS 200 iterations, length: 12");
+        System.out.println("\t\t 6 pessimisticMCTS");
     }
 
     public static void main(String[] args) {
 
         //default
         if(args.length == 0)
-            args = new String[]{"0", "1", "1", "-1", "2", "3", "4", "5"};
+            args = new String[]{"0", "10", "10", "-1", "3", "3", "3", "6"};
 
         if(args.length != 8) {
             printHelp();
@@ -120,6 +123,16 @@ public class Run {
                         mctsParams.heuristic_method = mctsParams.CUSTOM_HEURISTIC;
                         p = new MCTSPlayer(seed, playerID++, mctsParams);
                         playerStr[i-4] = "MCTS";
+                        break;
+                    case 6:
+                        pMCTSParams pMCTSParams = new pMCTSParams();
+                        pMCTSParams.stop_type = pMCTSParams.STOP_TIME;
+                        pMCTSParams.num_time = 40;
+                        pMCTSParams.rollout_depth = 12;
+
+                        pMCTSParams.heuristic_method = pMCTSParams.CUSTOM_HEURISTIC;
+                        p = new pessimisticMCTSPlayer(seed, playerID++, pMCTSParams);
+                        playerStr[i-4] = "pMCTS";
                         break;
                     default:
                         System.out.println("WARNING: Invalid agent ID: " + agentType );

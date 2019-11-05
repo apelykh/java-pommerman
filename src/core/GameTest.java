@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import players.*;
 import players.mcts.MCTSParams;
 import players.mcts.MCTSPlayer;
+import players.pessimisticMcts.pessimisticMCTSPlayer;
 import players.rhea.RHEAPlayer;
 import players.rhea.utils.Constants;
 import players.rhea.utils.RHEAParams;
@@ -463,6 +464,7 @@ class GameTest {
         RHEAParams rheaParams = new RHEAParams();
         rheaParams.heurisic_type = Constants.CUSTOM_HEURISTIC;
 
+//        players.add(new MCTSPlayer(seed, playerID++, mctsParams));
         players.add(new MCTSPlayer(seed, playerID++, mctsParams));
         players.add(new RHEAPlayer(seed, playerID++, rheaParams));
 

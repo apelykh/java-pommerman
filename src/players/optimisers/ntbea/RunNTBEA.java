@@ -2,8 +2,6 @@ package players.optimisers.ntbea;
 
 import players.optimisers.ParameterizedPlayer;
 import players.optimisers.evodef.EvaluatePommerman;
-import players.mcts.MCTSParams;
-import players.mcts.MCTSPlayer;
 import players.rhea.RHEAPlayer;
 import players.rhea.utils.RHEAParams;
 

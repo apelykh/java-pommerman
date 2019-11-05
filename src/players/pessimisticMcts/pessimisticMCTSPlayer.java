@@ -1,4 +1,4 @@
-package players.mcts;
+package players.pessimisticMcts;
 
 import core.GameState;
 import players.optimisers.ParameterizedPlayer;
@@ -9,7 +9,7 @@ import utils.Types;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class MCTSPlayer extends ParameterizedPlayer {
+public class pessimisticMCTSPlayer extends ParameterizedPlayer {
 
     /**
      * Random generator.
@@ -24,13 +24,13 @@ public class MCTSPlayer extends ParameterizedPlayer {
     /**
      * Params for this MCTS
      */
-    public MCTSParams params;
+    public pMCTSParams params;
 
-    public MCTSPlayer(long seed, int id) {
-        this(seed, id, new MCTSParams());
+    public pessimisticMCTSPlayer(long seed, int id) {
+        this(seed, id, new pMCTSParams());
     }
 
-    public MCTSPlayer(long seed, int id, MCTSParams params) {
+    public pessimisticMCTSPlayer(long seed, int id, pMCTSParams params) {
         super(seed, id, params);
         reset(seed, id);
 
@@ -47,9 +47,9 @@ public class MCTSPlayer extends ParameterizedPlayer {
         super.reset(seed, playerID);
         m_rnd = new Random(seed);
 
-        this.params = (MCTSParams) getParameters();
+        this.params = (pMCTSParams) getParameters();
         if (this.params == null) {
-            this.params = new MCTSParams();
+            this.params = new pMCTSParams();
             super.setParameters(this.params);
         }
     }
@@ -94,6 +94,6 @@ public class MCTSPlayer extends ParameterizedPlayer {
 
     @Override
     public Player copy() {
-        return new players.mcts.MCTSPlayer(seed, playerID, params);
+        return new pessimisticMCTSPlayer(seed, playerID, params);
     }
 }

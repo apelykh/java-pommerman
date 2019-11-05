@@ -4,14 +4,12 @@ import core.Game;
 import players.Player;
 import players.mcts.MCTSPlayer;
 import players.optimisers.ParameterizedPlayer;
-import players.optimisers.evodef.EvaluatePommerman;
 import players.rhea.RHEAPlayer;
 import players.rhea.utils.RHEAParams;
 import utils.Types;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Map;
 
 import static utils.Types.NUM_PLAYERS;
 
