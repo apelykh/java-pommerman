@@ -26,7 +26,8 @@ public class pMCTSParams implements ParameterSet {
     // Parameters
     public double K = Math.sqrt(2);
     public int search_depth = 2;
-    public int rollout_depth = 8; //10;
+    public int pessimistic_simulation_depth = 4;
+    public int rollout_depth = 10;
     public int heuristic_method = CUSTOM_HEURISTIC;
 
     // Budget settings

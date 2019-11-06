@@ -1,12 +1,13 @@
 import core.Game;
 import players.*;
 import utils.Types;
-import players.rhea.utils.Constants;
 import players.mcts.MCTSParams;
 import players.mcts.MCTSPlayer;
 import players.pessimisticMcts.pMCTSParams;
 import players.pessimisticMcts.pessimisticMCTSPlayer;
+import players.rhea.utils.Constants;
 import players.rhea.utils.RHEAParams;
+import players.rhea.RHEAPlayer;
 
 
 import java.util.ArrayList;
@@ -38,18 +39,28 @@ public class Test {
         RHEAParams rheaParams = new RHEAParams();
         rheaParams.heurisic_type = Constants.CUSTOM_HEURISTIC;
 
+//        pMCTSParams pMCTSParams = new pMCTSParams();
         pMCTSParams pMCTSParams = new pMCTSParams();
+//        pMCTSParams.stop_type = pMCTSParams.STOP_TIME;
+//        pMCTSParams.num_time = 90;
         pMCTSParams.stop_type = mctsParams.STOP_ITERATIONS;
-        pMCTSParams.heuristic_method = mctsParams.CUSTOM_HEURISTIC;
+        pMCTSParams.num_iterations = 100;
+        pMCTSParams.search_depth = 2;
+        pMCTSParams.pessimistic_simulation_depth = 4;
+        pMCTSParams.rollout_depth = 10;
+//        pMCTSParams.heuristic_method = pMCTSParams.CUSTOM_HEURISTIC;
+        pMCTSParams.heuristic_method = pMCTSParams.ADVANCED_HEURISTIC;
 
         players.add(new pessimisticMCTSPlayer(seed, playerID++, pMCTSParams));
-        //players.add(new MCTSPlayer(seed, playerID++, mctsParams));
+//        players.add(new MCTSPlayer(seed, playerID++, mctsParams));
 
+        players.add(new SimplePlayer(seed, playerID++));
+//        players.add(new RHEAPlayer(seed, playerID++, rheaParams));
+        players.add(new SimplePlayer(seed, playerID++));
 //        players.add(new SimplePlayer(seed, playerID++));
-        players.add(new RHEAPlayer(seed, playerID++, rheaParams));
-//        players.add(new SimplePlayer(seed, playerID++));
-        players.add(new MCTSPlayer(seed, playerID++, new MCTSParams()));
-        players.add(new RHEAPlayer(seed, playerID++, rheaParams));
+        players.add(new HumanPlayer(ki1, playerID++));
+//        players.add(new MCTSPlayer(seed, playerID++, new MCTSParams()));
+//        players.add(new RHEAPlayer(seed, playerID++, rheaParams));
 
         // Make sure we have exactly NUM_PLAYERS players
         assert players.size() == Types.NUM_PLAYERS : "There should be " + Types.NUM_PLAYERS +

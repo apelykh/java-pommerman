@@ -33,10 +33,9 @@ public class Run {
     }
 
     public static void main(String[] args) {
-
         //default
         if(args.length == 0)
-            args = new String[]{"0", "10", "10", "-1", "3", "3", "3", "6"};
+            args = new String[]{"0", "5", "10", "-1", "5", "5", "5", "6"};
 
         if(args.length != 8) {
             printHelp();
@@ -127,8 +126,12 @@ public class Run {
                     case 6:
                         pMCTSParams pMCTSParams = new pMCTSParams();
                         pMCTSParams.stop_type = pMCTSParams.STOP_TIME;
-                        pMCTSParams.num_time = 40;
-                        pMCTSParams.rollout_depth = 12;
+                        pMCTSParams.num_time = 90;
+//                        pMCTSParams.stop_type = pMCTSParams.STOP_ITERATIONS;
+//                        pMCTSParams.num_iterations = 200;
+                        pMCTSParams.search_depth = 2;
+                        pMCTSParams.pessimistic_simulation_depth = 4;
+                        pMCTSParams.rollout_depth = 10;
 
                         pMCTSParams.heuristic_method = pMCTSParams.CUSTOM_HEURISTIC;
                         p = new pessimisticMCTSPlayer(seed, playerID++, pMCTSParams);
@@ -239,7 +242,6 @@ public class Run {
                 int[] overtimes = g.getPlayerOvertimes();
                 for(int j = 0; j < overtimes.length; ++j)
                     overtimeCount[j] += overtimes[j];
-
             }
         }
 
@@ -253,7 +255,7 @@ public class Run {
             double lossPerc = lossCount[pIdx] * 100.0 / (double)totalNgames;
             double overtimesAvg = overtimeCount[pIdx] / (double)totalNgames;
 
-            System.out.println(totalNgames + "\t" + winPerc + "%\t" + tiePerc + "%\t" + lossPerc + "%\t" + player + " (" + overtimesAvg + ")" );
+            System.out.println(totalNgames + "\t" + winPerc + "%\t" + tiePerc + "%\t" + lossPerc + "%\t" + player + " (" + overtimesAvg + ")" + "\t" + overtimeCount[pIdx]);
         }
     }
 }

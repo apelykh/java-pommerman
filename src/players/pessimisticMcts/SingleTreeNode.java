@@ -10,6 +10,8 @@ import utils.Utils;
 import utils.Vector2d;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 public class SingleTreeNode {
@@ -27,25 +29,30 @@ public class SingleTreeNode {
 
     private int num_actions;
     private Types.ACTIONS[] actions;
+    private List<HashMap<Types.ACTIONS, Double>> opponentActionProbs;
 
     private GameState rootState;
     private StateHeuristic rootStateHeuristic;
 
-    SingleTreeNode(pMCTSParams p, Random rnd, int num_actions, Types.ACTIONS[] actions) {
-        this(p, null, -1, rnd, num_actions, actions, 0, null);
+    SingleTreeNode(pMCTSParams p, Random rnd, int num_actions, Types.ACTIONS[] actions,
+                   List<HashMap<Types.ACTIONS, Double>> opponentActionProbs) {
+        this(p, null, -1, rnd, num_actions, actions, opponentActionProbs, 0, null);
     }
 
     private SingleTreeNode(pMCTSParams p, SingleTreeNode parent, int childIdx, Random rnd, int num_actions,
-                           Types.ACTIONS[] actions, int fmCallsCount, StateHeuristic sh) {
+                           Types.ACTIONS[] actions, List<HashMap<Types.ACTIONS, Double>> opponentActionProbs,
+                           int fmCallsCount, StateHeuristic sh) {
         this.params = p;
         this.fmCallsCount = fmCallsCount;
         this.parent = parent;
         this.m_rnd = rnd;
         this.num_actions = num_actions;
         this.actions = actions;
+        this.opponentActionProbs = opponentActionProbs;
         children = new SingleTreeNode[num_actions];
         totValue = 0.0;
         this.childIdx = childIdx;
+
         if (parent != null) {
             m_depth = parent.m_depth + 1;
             this.rootStateHeuristic = sh;
@@ -74,8 +81,15 @@ public class SingleTreeNode {
             GameState state = rootState.copy();
             ElapsedCpuTimer elapsedTimerIteration = new ElapsedCpuTimer();
             SingleTreeNode selected = treePolicy(state);
-            double delta = selected.rollOut(state);
-            backUp(selected, delta);
+
+            double score;
+            if (selected.m_depth == params.search_depth) {
+                // perform pessimistic simulation
+                score = selected.pessimisticRollOut(state);
+            } else {
+                score = selected.rollOut(state);
+            }
+            backUp(selected, score);
 
             //Stopping condition
             if (params.stop_type == params.STOP_TIME) {
@@ -99,6 +113,7 @@ public class SingleTreeNode {
         SingleTreeNode cur = this;
 
         while (!state.isTerminal() && cur.m_depth < params.search_depth) {
+//        while (!state.isTerminal() && cur.m_depth < params.rollout_depth) {
             if (cur.notFullyExpanded()) {
                 return cur.expand(state);
             } else {
@@ -123,13 +138,13 @@ public class SingleTreeNode {
         roll(state, actions[bestAction]);
 
         SingleTreeNode tn = new SingleTreeNode(params, this, bestAction, this.m_rnd, num_actions,
-                actions, fmCallsCount, rootStateHeuristic);
+                actions, opponentActionProbs, fmCallsCount, rootStateHeuristic);
         children[bestAction] = tn;
         return tn;
     }
 
     private void roll(GameState gs, Types.ACTIONS act) {
-        //Simple, all random first, then my position.
+        // Simple, all random first, then my position.
         int nPlayers = 4;
         Types.ACTIONS[] actionsAll = new Types.ACTIONS[4];
         int playerId = gs.getPlayerId() - Types.TILETYPE.AGENT0.getKey();
@@ -149,6 +164,7 @@ public class SingleTreeNode {
     private SingleTreeNode uct(GameState state) {
         SingleTreeNode selected = null;
         double bestValue = -Double.MAX_VALUE;
+
         for (SingleTreeNode child : this.children) {
             double hvVal = child.totValue;
             double childValue = hvVal / (child.nVisits + params.epsilon);
@@ -186,7 +202,26 @@ public class SingleTreeNode {
             thisDepth++;
         }
 
-        return rootStateHeuristic.evaluateState(state);
+        double score = rootStateHeuristic.evaluateState(state);
+
+        return score;
+    }
+
+    private double pessimisticRollOut(GameState state) {
+        int thisDepth = this.m_depth;
+
+        while (thisDepth <= params.pessimistic_simulation_depth && !state.isTerminal()) {
+            roll(state, Types.ACTIONS.ACTION_STOP);
+            roll(state, Types.ACTIONS.ACTION_STOP);
+
+            int action = safeRandomAction(state);
+            roll(state, actions[action]);
+            thisDepth++;
+        }
+
+        double score = rootStateHeuristic.evaluateState(state);
+
+        return score;
     }
 
     private int safeRandomAction(GameState state) {
@@ -221,7 +256,6 @@ public class SingleTreeNode {
         return depth >= params.rollout_depth || rollerState.isTerminal();
     }
 
-
     private void backUp(SingleTreeNode node, double result) {
         SingleTreeNode n = node;
 
@@ -238,7 +272,6 @@ public class SingleTreeNode {
         }
     }
 
-
     int mostVisitedAction() {
         int selected = -1;
         double bestValue = -Double.MAX_VALUE;
@@ -246,7 +279,6 @@ public class SingleTreeNode {
         double first = -1;
 
         for (int i = 0; i < children.length; i++) {
-
             if (children[i] != null) {
                 if (first == -1)
                     first = children[i].nVisits;
@@ -288,7 +320,6 @@ public class SingleTreeNode {
                 }
             }
         }
-
         if (selected == -1) {
             System.out.println("Unexpected selection!");
             selected = 0;
@@ -297,14 +328,12 @@ public class SingleTreeNode {
         return selected;
     }
 
-
     private boolean notFullyExpanded() {
         for (SingleTreeNode tn : children) {
             if (tn == null) {
                 return true;
             }
         }
-
         return false;
     }
 }
