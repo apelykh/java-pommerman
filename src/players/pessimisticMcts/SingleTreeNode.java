@@ -14,6 +14,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+
 
 public class SingleTreeNode {
     public pMCTSParams params;
@@ -65,9 +69,9 @@ public class SingleTreeNode {
         this.rootState = gs;
         if (params.heuristic_method == params.CUSTOM_HEURISTIC)
             this.rootStateHeuristic = new CustomHeuristic(gs);
-        else if (params.heuristic_method == params.ADVANCED_HEURISTIC) // New method: combined heuristics
+        else if (params.heuristic_method == params.ADVANCED_HEURISTIC)
             this.rootStateHeuristic = new AdvancedHeuristic(gs, m_rnd);
-        else if (params.heuristic_method == params.MODIFIED_ADVANCED_HEURISTIC) // New method: combined heuristics
+        else if (params.heuristic_method == params.MODIFIED_ADVANCED_HEURISTIC)
             this.rootStateHeuristic = new ModifiedAdvancedHeuristic(gs, m_rnd);
     }
 
@@ -115,8 +119,8 @@ public class SingleTreeNode {
     private SingleTreeNode treePolicy(GameState state) {
         SingleTreeNode cur = this;
 
-        while (!state.isTerminal() && cur.m_depth < params.search_depth) {
-//        while (!state.isTerminal() && cur.m_depth < params.rollout_depth) {
+        // we are not expanding after the depth of params.search_depth
+        while (!state.isTerminal() && cur.m_depth <= params.search_depth) {
             if (cur.notFullyExpanded()) {
                 return cur.expand(state);
             } else {
@@ -147,7 +151,6 @@ public class SingleTreeNode {
     }
 
     private void roll(GameState gs, Types.ACTIONS act) {
-        // Simple, all random first, then my position.
         int nPlayers = 4;
         Types.ACTIONS[] actionsAll = new Types.ACTIONS[4];
         int playerId = gs.getPlayerId() - Types.TILETYPE.AGENT0.getKey();
@@ -156,9 +159,31 @@ public class SingleTreeNode {
             if (playerId == i) {
                 actionsAll[i] = act;
             } else {
-                // random action for all of the enemy agents
-                int actionIdx = m_rnd.nextInt(gs.nActions());
-                actionsAll[i] = Types.ACTIONS.all().get(actionIdx);
+                if (params.probabilistic_model) {
+                    // use simple probabilistic opponent model
+                    HashMap<Types.ACTIONS, Double> agentActionsProb = opponentActionProbs.get(i);
+
+                    Set<Double> values = new HashSet<>(agentActionsProb.values());
+                    // if all the probabilities are equal at the current iteration, choose randomly
+                    if (values.size() == 1) {
+                        int actionIdx = m_rnd.nextInt(gs.nActions());
+                        actionsAll[i] = Types.ACTIONS.all().get(actionIdx);
+                    } else {
+                        // otherwise, choose the most frequent action
+                        Map.Entry<Types.ACTIONS, Double> maxEntry = null;
+                        for (Map.Entry<Types.ACTIONS, Double> entry : agentActionsProb.entrySet()) {
+                            if (maxEntry == null || entry.getValue().compareTo(maxEntry.getValue()) > 0) {
+                                maxEntry = entry;
+                            }
+                        }
+                        Types.ACTIONS mostProbableAction = maxEntry.getKey();
+                        actionsAll[i] = mostProbableAction;
+                    }
+                } else{
+                    // random action for all of the enemy agents
+                    int actionIdx = m_rnd.nextInt(gs.nActions());
+                    actionsAll[i] = Types.ACTIONS.all().get(actionIdx);
+                }
             }
         }
         gs.next(actionsAll);
@@ -205,9 +230,7 @@ public class SingleTreeNode {
             thisDepth++;
         }
 
-        double score = rootStateHeuristic.evaluateState(state);
-
-        return score;
+        return rootStateHeuristic.evaluateState(state);
     }
 
     private double pessimisticRollOut(GameState state) {
@@ -222,9 +245,7 @@ public class SingleTreeNode {
             thisDepth++;
         }
 
-        double score = rootStateHeuristic.evaluateState(state);
-
-        return score;
+        return rootStateHeuristic.evaluateState(state);
     }
 
     private int safeRandomAction(GameState state) {

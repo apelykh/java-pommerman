@@ -5,9 +5,9 @@ import players.optimisers.ParameterizedPlayer;
 import players.Player;
 import utils.ElapsedCpuTimer;
 import utils.Types;
-import utils.Utils;
+// import utils.Utils;
 
-import java.lang.reflect.Type;
+// import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
@@ -25,10 +25,11 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
      */
     public Types.ACTIONS[] actions;
 
-    // ---------------------
+    /**
+     * HashMaps for the probabilistic opponent model
+     */
     private List<HashMap<Types.ACTIONS, Integer>> opponentActionCounts = new ArrayList<>();
     private List<HashMap<Types.ACTIONS, Double>> opponentActionProbs = new ArrayList<>();
-    // ---------------------
 
     /**
      * Params for this MCTS
@@ -48,9 +49,17 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
         super(seed, id, params);
         reset(seed, id);
 
-        double defaultProb = 1 / (double)6;
+        ArrayList<Types.ACTIONS> actionsList = Types.ACTIONS.all();
+        actions = new Types.ACTIONS[actionsList.size()];
+        int i = 0;
+        for (Types.ACTIONS act : actionsList) {
+            actions[i++] = act;
+        }
 
-        for (int i = 0; i < 4; i++) {
+        double defaultProb = 1 / (double)actionsList.size();
+
+        // initialize HashMaps with 0 counts and default probabilities for each player
+        for (int j = 0; j < 4; j++) {
             HashMap<Types.ACTIONS, Integer> countMap = new HashMap<>();
             countMap.put(Types.ACTIONS.ACTION_STOP, 0);
             countMap.put(Types.ACTIONS.ACTION_BOMB, 0);
@@ -69,13 +78,6 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
             probMap.put(Types.ACTIONS.ACTION_RIGHT, defaultProb);
             opponentActionProbs.add(probMap);
         }
-
-        ArrayList<Types.ACTIONS> actionsList = Types.ACTIONS.all();
-        actions = new Types.ACTIONS[actionsList.size()];
-        int i = 0;
-        for (Types.ACTIONS act : actionsList) {
-            actions[i++] = act;
-        }
     }
 
     @Override
@@ -90,15 +92,12 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
         }
     }
 
-//    private int[][] scanBoard(Types.TILETYPE[][] board) {
-    private Object[] scanBoard(Types.TILETYPE[][] board) {
+    private int[][] scanBoard(Types.TILETYPE[][] board) {
         int boardSizeX = board.length;
         int boardSizeY = board[0].length;
 
-        // 4 player positions, (x, y) coordinates
+        // (x, y) coordinates of 4 players on the board
         int[][] positions = new int[4][2];
-
-        ArrayList<int[]> bombs = new ArrayList<>();
 
         for (int x = 0; x < boardSizeX; x++) {
             for (int y = 0; y < boardSizeY; y++) {
@@ -114,52 +113,22 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
                 } else if (board[y][x] == Types.TILETYPE.AGENT3) {
                     positions[3][0] = x;
                     positions[3][1] = y;
-                } else if (board[y][x] == Types.TILETYPE.BOMB) {
-                    int[] coords = new int[2];
-                    coords[0] = x;
-                    coords[1] = y;
-                    bombs.add(coords);
                 }
             }
         }
-//        for (int i = 0; i < bombs.size(); i++) {
-//            positions[4 + i] = bombs.get(i);
-//        }
-//        return positions;
-        return new Object[]{positions, bombs};
+        return positions;
     }
 
-    private boolean checkBombAtCoords(int[][] positions, int x, int y) {
-        // go through all bombs
-        for (int i = 4; i < 8; i++) {
-            if (positions[i][0] == x && positions[i][1] == y) {
-                return true;
-            }
-        }
-        return false;
-    }
-
+    /**
+     * Derive opponents' actions from the differences between previous GameState and the current one
+     */
     private Types.ACTIONS[] observeAgentsActions(GameState presGS, GameState gs) {
         Types.TILETYPE[][] prevBoard = presGS.getBoard();
         Types.TILETYPE[][] curBoard = gs.getBoard();
-
         Types.ACTIONS[] actionsTaken = new Types.ACTIONS[4];
 
-//        int playerId = gs.getPlayerId() - Types.TILETYPE.AGENT0.getKey();
-//        System.out.println(playerId);
-
-//        int[][] curPositions = scanBoard(curBoard);
-//        int[][] prevPositions = scanBoard(prevBoard);
-
-        Object[] curScan = scanBoard(curBoard);
-        int[][] curPositions = (int[][])curScan[0];
-        ArrayList<int[]> curBombs = (ArrayList<int[]>)curScan[1];
-//        int[][] prevPositions = scanBoard(prevBoard);
-
-        Object[] prevScan = scanBoard(prevBoard);
-        int[][] prevPositions = (int[][])prevScan[0];
-        ArrayList<int[]> prevBombs = (ArrayList<int[]>)prevScan[1];
-
+        int[][] curPositions = scanBoard(curBoard);
+        int[][] prevPositions = scanBoard(prevBoard);
 
         for (int iAgent = 0; iAgent < 4; iAgent++) {
             if (prevPositions[iAgent][0] > curPositions[iAgent][0]) {
@@ -172,16 +141,11 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
                 actionsTaken[iAgent] = Types.ACTIONS.ACTION_UP;
             } else if (curPositions[iAgent][0] == prevPositions[iAgent][0] &&
                     curPositions[iAgent][1] == prevPositions[iAgent][1]) {
-                // Its either STOP or BOMB
-                int cur_x = curPositions[iAgent][0];
-                int cur_y = curPositions[iAgent][1];
-                boolean isBomb = checkBombAtCoords(curPositions, cur_x, cur_y);
-                boolean isPrevBomb = checkBombAtCoords(prevPositions, cur_x, cur_y);
-
-                if (isBomb && !isPrevBomb)
-                    actionsTaken[iAgent] = Types.ACTIONS.ACTION_BOMB;
-                else
+                // Its either STOP or BOMB; deriving the actual action from the board is complicated.
+                if (m_rnd.nextDouble() < 0.5)
                     actionsTaken[iAgent] = Types.ACTIONS.ACTION_STOP;
+                else
+                    actionsTaken[iAgent] = Types.ACTIONS.ACTION_BOMB;
             }
         }
         return actionsTaken;
@@ -192,11 +156,10 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
             Types.ACTIONS performedAction = actions[i];
             HashMap<Types.ACTIONS, Integer> curOpponentCountMap = opponentActionCounts.get(i);
 
-            if (curOpponentCountMap.containsKey(performedAction)) {
+            if (curOpponentCountMap.containsKey(performedAction))
                 curOpponentCountMap.put(performedAction, curOpponentCountMap.get(performedAction) + 1);
-            } else {
+            else
                 curOpponentCountMap.put(performedAction, 1);
-            }
 
             // calculate total count of actions for the current agent
             int totalCount = 0;
@@ -206,14 +169,12 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
 
             HashMap<Types.ACTIONS, Double> curOpponentProbMap = opponentActionProbs.get(i);
 
+            // update action probabilities
             for (Types.ACTIONS action : Types.ACTIONS.all()) {
                 int actCount = curOpponentCountMap.get(action);
                 double actProb = actCount / (double)totalCount;
-
-                double curProb = curOpponentProbMap.get(action);
-                double newProb = (curProb + actProb) / 2;
-
-                curOpponentProbMap.put(action, newProb);
+                // very extreme way to update probabilities, may think of a more gentle one
+                curOpponentProbMap.put(action, actProb);
             }
         }
     }
@@ -232,11 +193,10 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
         // Number of actions available
         int num_actions = actions.length;
 
-        Types.ACTIONS[] actionsTaken = null;
-
+//        Types.ACTIONS[] actionsTaken;
         if (this.prevGS != null) {
             // calculate the difference between states
-            actionsTaken = observeAgentsActions(this.prevGS, gs);
+            Types.ACTIONS[] actionsTaken = observeAgentsActions(this.prevGS, gs);
             updateOpponentActionProbs(actionsTaken);
         }
 

@@ -33,9 +33,8 @@ public class Run {
     }
 
     public static void main(String[] args) {
-        //default
         if(args.length == 0)
-            args = new String[]{"0", "5", "10", "-1", "3", "3", "3", "6"};
+            args = new String[]{"0", "-1", "10", "-1", "3", "3", "3", "6"};
 
         if(args.length != 8) {
             printHelp();
@@ -116,25 +115,25 @@ public class Run {
                     case 5:
                         MCTSParams mctsParams = new MCTSParams();
                         mctsParams.stop_type = mctsParams.STOP_ITERATIONS;
-                        mctsParams.num_iterations = 200;
-                        mctsParams.rollout_depth = 12;
+                        mctsParams.num_iterations = 150;
+                        mctsParams.rollout_depth = 10;
 
-                        mctsParams.heuristic_method = mctsParams.CUSTOM_HEURISTIC;
+                        mctsParams.heuristic_method = mctsParams.ADVANCED_HEURISTIC;
                         p = new MCTSPlayer(seed, playerID++, mctsParams);
                         playerStr[i-4] = "MCTS";
                         break;
                     case 6:
                         pMCTSParams pMCTSParams = new pMCTSParams();
-                        pMCTSParams.stop_type = pMCTSParams.STOP_TIME;
-                        pMCTSParams.num_time = 90;
-//                        pMCTSParams.stop_type = pMCTSParams.STOP_ITERATIONS;
-//                        pMCTSParams.num_iterations = 200;
-                        pMCTSParams.search_depth = 2;
-                        pMCTSParams.pessimistic_simulation_depth = 4;
+//                        pMCTSParams.stop_type = pMCTSParams.STOP_TIME;
+//                        pMCTSParams.num_time = 70;
+                        pMCTSParams.stop_type = pMCTSParams.STOP_ITERATIONS;
+                        pMCTSParams.num_iterations = 150;
+                        pMCTSParams.search_depth = 1;
+                        pMCTSParams.pessimistic_simulation_depth = 12;
                         pMCTSParams.rollout_depth = 10;
-
-//                        pMCTSParams.heuristic_method = pMCTSParams.CUSTOM_HEURISTIC;
                         pMCTSParams.heuristic_method = pMCTSParams.MODIFIED_ADVANCED_HEURISTIC;
+                        pMCTSParams.probabilistic_model = false;
+
                         p = new pessimisticMCTSPlayer(seed, playerID++, pMCTSParams);
                         playerStr[i-4] = "pMCTS";
                         break;
