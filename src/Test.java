@@ -49,7 +49,8 @@ public class Test {
         pMCTSParams.pessimistic_simulation_depth = 4;
         pMCTSParams.rollout_depth = 10;
 //        pMCTSParams.heuristic_method = pMCTSParams.CUSTOM_HEURISTIC;
-        pMCTSParams.heuristic_method = pMCTSParams.ADVANCED_HEURISTIC;
+        pMCTSParams.heuristic_method = pMCTSParams.MODIFIED_ADVANCED_HEURISTIC;
+//        pMCTSParams.heuristic_method = pMCTSParams.ADVANCED_HEURISTIC;
 
         players.add(new pessimisticMCTSPlayer(seed, playerID++, pMCTSParams));
 //        players.add(new MCTSPlayer(seed, playerID++, mctsParams));

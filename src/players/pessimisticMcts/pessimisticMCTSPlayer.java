@@ -48,6 +48,8 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
         super(seed, id, params);
         reset(seed, id);
 
+        double defaultProb = 1 / (double)6;
+
         for (int i = 0; i < 4; i++) {
             HashMap<Types.ACTIONS, Integer> countMap = new HashMap<>();
             countMap.put(Types.ACTIONS.ACTION_STOP, 0);
@@ -59,12 +61,12 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
             opponentActionCounts.add(countMap);
 
             HashMap<Types.ACTIONS, Double> probMap = new HashMap<>();
-            probMap.put(Types.ACTIONS.ACTION_STOP, 16.67);
-            probMap.put(Types.ACTIONS.ACTION_BOMB, 16.67);
-            probMap.put(Types.ACTIONS.ACTION_UP, 16.67);
-            probMap.put(Types.ACTIONS.ACTION_DOWN, 16.67);
-            probMap.put(Types.ACTIONS.ACTION_LEFT, 16.67);
-            probMap.put(Types.ACTIONS.ACTION_RIGHT, 16.67);
+            probMap.put(Types.ACTIONS.ACTION_STOP, defaultProb);
+            probMap.put(Types.ACTIONS.ACTION_BOMB, defaultProb);
+            probMap.put(Types.ACTIONS.ACTION_UP, defaultProb);
+            probMap.put(Types.ACTIONS.ACTION_DOWN, defaultProb);
+            probMap.put(Types.ACTIONS.ACTION_LEFT, defaultProb);
+            probMap.put(Types.ACTIONS.ACTION_RIGHT, defaultProb);
             opponentActionProbs.add(probMap);
         }
 
@@ -88,12 +90,13 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
         }
     }
 
-    private int[][] scanBoard(Types.TILETYPE[][] board) {
+//    private int[][] scanBoard(Types.TILETYPE[][] board) {
+    private Object[] scanBoard(Types.TILETYPE[][] board) {
         int boardSizeX = board.length;
         int boardSizeY = board[0].length;
 
-        // 4 player positions [0:3] and 4 potential bombs [4:7]
-        int[][] positions = new int[8][2];
+        // 4 player positions, (x, y) coordinates
+        int[][] positions = new int[4][2];
 
         ArrayList<int[]> bombs = new ArrayList<>();
 
@@ -119,10 +122,11 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
                 }
             }
         }
-        for (int i = 0; i < bombs.size(); i++) {
-            positions[4 + i] = bombs.get(i);
-        }
-        return positions;
+//        for (int i = 0; i < bombs.size(); i++) {
+//            positions[4 + i] = bombs.get(i);
+//        }
+//        return positions;
+        return new Object[]{positions, bombs};
     }
 
     private boolean checkBombAtCoords(int[][] positions, int x, int y) {
@@ -144,8 +148,18 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
 //        int playerId = gs.getPlayerId() - Types.TILETYPE.AGENT0.getKey();
 //        System.out.println(playerId);
 
-        int[][] curPositions = scanBoard(curBoard);
-        int[][] prevPositions = scanBoard(prevBoard);
+//        int[][] curPositions = scanBoard(curBoard);
+//        int[][] prevPositions = scanBoard(prevBoard);
+
+        Object[] curScan = scanBoard(curBoard);
+        int[][] curPositions = (int[][])curScan[0];
+        ArrayList<int[]> curBombs = (ArrayList<int[]>)curScan[1];
+//        int[][] prevPositions = scanBoard(prevBoard);
+
+        Object[] prevScan = scanBoard(prevBoard);
+        int[][] prevPositions = (int[][])prevScan[0];
+        ArrayList<int[]> prevBombs = (ArrayList<int[]>)prevScan[1];
+
 
         for (int iAgent = 0; iAgent < 4; iAgent++) {
             if (prevPositions[iAgent][0] > curPositions[iAgent][0]) {
@@ -171,6 +185,37 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
             }
         }
         return actionsTaken;
+    }
+
+    private void updateOpponentActionProbs(Types.ACTIONS[] actions) {
+        for (int i = 0; i < this.opponentActionCounts.size(); i++) {
+            Types.ACTIONS performedAction = actions[i];
+            HashMap<Types.ACTIONS, Integer> curOpponentCountMap = opponentActionCounts.get(i);
+
+            if (curOpponentCountMap.containsKey(performedAction)) {
+                curOpponentCountMap.put(performedAction, curOpponentCountMap.get(performedAction) + 1);
+            } else {
+                curOpponentCountMap.put(performedAction, 1);
+            }
+
+            // calculate total count of actions for the current agent
+            int totalCount = 0;
+            for (int actCount : curOpponentCountMap.values()) {
+                totalCount += actCount;
+            }
+
+            HashMap<Types.ACTIONS, Double> curOpponentProbMap = opponentActionProbs.get(i);
+
+            for (Types.ACTIONS action : Types.ACTIONS.all()) {
+                int actCount = curOpponentCountMap.get(action);
+                double actProb = actCount / (double)totalCount;
+
+                double curProb = curOpponentProbMap.get(action);
+                double newProb = (curProb + actProb) / 2;
+
+                curOpponentProbMap.put(action, newProb);
+            }
+        }
     }
 
     @Override
@@ -221,37 +266,6 @@ public class pessimisticMCTSPlayer extends ParameterizedPlayer {
         int[] message = new int[Types.MESSAGE_LENGTH];
         message[0] = 1;
         return message;
-    }
-
-    private void updateOpponentActionProbs(Types.ACTIONS[] actions) {
-        for (int i = 0; i < this.opponentActionCounts.size(); i++) {
-            Types.ACTIONS performedAction = actions[i];
-            HashMap<Types.ACTIONS, Integer> curOpponentCountMap = opponentActionCounts.get(i);
-
-            if (curOpponentCountMap.containsKey(performedAction)) {
-                curOpponentCountMap.put(performedAction, curOpponentCountMap.get(performedAction) + 1);
-            } else {
-                curOpponentCountMap.put(performedAction, 1);
-            }
-
-            // calculate total count of actions for the current agent
-            int totalCount = 0;
-            for (int actCount : curOpponentCountMap.values()) {
-                totalCount += actCount;
-            }
-
-            HashMap<Types.ACTIONS, Double> curOpponentProbMap = opponentActionProbs.get(i);
-
-            for (Types.ACTIONS action : Types.ACTIONS.all()) {
-                int actCount = curOpponentCountMap.get(action);
-                double actProb = actCount / (double)totalCount;
-
-//                double curProb = curOpponentProbMap.get(action);
-//                double newProb = (curProb + actProb) / 2;
-
-                curOpponentProbMap.put(action, actProb);
-            }
-        }
     }
 
     @Override

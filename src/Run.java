@@ -35,7 +35,7 @@ public class Run {
     public static void main(String[] args) {
         //default
         if(args.length == 0)
-            args = new String[]{"0", "5", "10", "-1", "5", "5", "5", "6"};
+            args = new String[]{"0", "5", "10", "-1", "3", "3", "3", "6"};
 
         if(args.length != 8) {
             printHelp();
@@ -133,7 +133,8 @@ public class Run {
                         pMCTSParams.pessimistic_simulation_depth = 4;
                         pMCTSParams.rollout_depth = 10;
 
-                        pMCTSParams.heuristic_method = pMCTSParams.CUSTOM_HEURISTIC;
+//                        pMCTSParams.heuristic_method = pMCTSParams.CUSTOM_HEURISTIC;
+                        pMCTSParams.heuristic_method = pMCTSParams.MODIFIED_ADVANCED_HEURISTIC;
                         p = new pessimisticMCTSPlayer(seed, playerID++, pMCTSParams);
                         playerStr[i-4] = "pMCTS";
                         break;
